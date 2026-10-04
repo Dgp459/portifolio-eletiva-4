@@ -1,10 +1,12 @@
 # Portifolio
-Nome: Davi Francisco da Silva Maia /
-curso: ADS (Análise e Desenvolvimento de Sistemas)
+Nome: Davi Francisco da Silva Maia **/**
+Curso: ADS (Análise e Desenvolvimento de Sistemas) **/**
 Periodo: 5° periodo
+
 ---
 
 ## **Materias que estou cursando Atualmente no 5° Periodo 2026**
+
 ```
 portifolio-eletiva-4
 
