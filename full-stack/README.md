@@ -16,6 +16,6 @@
 
 ## Trabalho Integrador
 
-O Full Stack está sendo desenvolvido principalmente como parte do trabalho integrador.
+O trabalho integrador está sendo desenvolvido principalmente como parte de Full Stack.
 
 https://github.com/Diogo746/Da-Match.git
