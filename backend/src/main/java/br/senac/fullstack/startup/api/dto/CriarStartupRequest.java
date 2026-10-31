@@ -1,0 +1,22 @@
+package br.senac.fullstack.startup.api.dto;
+
+import br.senac.fullstack.startup.domain.enums.StatusValidacao;
+import br.senac.fullstack.usuario.api.dto.CadastrarUsuarioRequest;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+public record CriarStartupRequest(
+        @NotNull
+        @Valid
+        CadastrarUsuarioRequest fundador,
+        @NotBlank @Size(max = 255) String nomeProvisorio,
+        @NotBlank @Size(max = 255) String pitchCurto,
+        @NotBlank @Size(max = 5000) String problemaCentral,
+        @NotBlank @Size(max = 5000) String solucaoProposta,
+        @NotBlank @Size(max = 255) String publicoAlvo,
+        @NotBlank @Size(max = 255) String modeloDeNegocio,
+        @NotNull StatusValidacao statusValidacao
+) {
+}

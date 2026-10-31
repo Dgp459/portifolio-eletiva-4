@@ -1,0 +1,623 @@
+{
+  "info": {
+    "_postman_id": "89f937f0-df1e-43b4-92d1-19b7680021bb",
+    "name": "Da-Match API",
+    "description": "API com autenticação por sessão. Preserve os cookies no Postman e obtenha CSRF antes de escritas, inclusive login/logout. Após login/logout, obtenha um novo CSRF. Cadastro exige visitante sem sessão e senha de 6 ou mais caracteres e até 72 bytes UTF-8. Agenda de mentor não aceita itens nulos. Leitura de startups exige sessão; edição de mentor exige titular e gestão de membros exige fundador/representante. PENDENTE contém somente propostas.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "mentorId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "startupId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "membroUsuarioId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "csrfToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Autenticação",
+      "description": "Use authEmail e authPassword apenas localmente com conta fictícia existente. Não exporte credenciais. Execute Obter token CSRF antes do login e novamente após login/logout. O cookie JSESSIONID é mantido pelo Postman.",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json; charset=utf-8" },
+              { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{authEmail}}\",\n  \"senha\": \"{{authPassword}}\"\n}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Login confirmado', () => pm.response.to.have.status(200));",
+            "pm.test('Resposta sem credenciais', () => { const body = pm.response.json(); pm.expect(body).not.to.have.property('senha'); pm.expect(body).not.to.have.property('sessionId'); });",
+            "if (pm.response.code === 200) pm.collectionVariables.unset('csrfToken');"
+          ] } }],
+          "response": []
+        },
+        {
+          "name": "Conta atual",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/v1/auth/me" },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }],
+            "url": "{{baseUrl}}/api/v1/auth/logout"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Sessão encerrada', () => pm.response.to.have.status(204));",
+            "if (pm.response.code === 204) pm.collectionVariables.unset('csrfToken');"
+          ] } }],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Disponíveis agora",
+      "description": "Endpoints que possuem controller no backend atual.",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/health",
+            "description": "HealthCheckController#getHealth"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Resposta contém status e timestamp', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('status');",
+                  "    pm.expect(body).to.have.property('timestamp');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Hello world",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/hello?name=Postman",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "hello"],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "Postman"
+                }
+              ]
+            },
+            "description": "Disponível somente fora do perfil prod. O parâmetro name é opcional."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Resposta contém mensagem', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('message');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Obter token CSRF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/csrf",
+            "description": "CsrfController#obterToken. Ao criar rotas de escrita protegidas por CSRF, envie o token retornado no header indicado por headerName."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Resposta contém os dados do token', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property('headerName');",
+                  "    pm.expect(body).to.have.property('token');",
+                  "    pm.collectionVariables.set('csrfToken', body.token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Mentor",
+      "description": "Cadastro público exige visitante e CSRF. PATCH exige login de MENTOR titular do mentorId e novo CSRF após login. O Postman preserva os cookies.",
+      "item": [
+        {
+          "name": "Meu perfil de mentor",
+          "description": "Exige sessão de MENTOR. O usuário é obtido da sessão; não envie usuarioId. Salva mentorId para os PATCH existentes.",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/v1/mentores/me" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Perfil privado do mentor', () => pm.response.to.have.status(200));",
+            "if (pm.response.code === 200) { const body = pm.response.json(); pm.collectionVariables.set('mentorId', body.id); pm.test('Sem senha na resposta', () => pm.expect(body).not.to.have.property('senha')); }"
+          ] } }],
+          "response": []
+        },
+        {
+          "name": "Registrar mentor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario\": {\n    \"nome\": \"Mentor de Teste\",\n    \"email\": \"mentor.teste+{{$timestamp}}@example.com\",\n    \"senha\": \"senha-teste-123\"\n  },\n  \"biografia\": \"Mentor com experiência em produtos digitais.\",\n  \"disponibilidades\": [\n    {\n      \"diaSemana\": 1,\n      \"periodo\": \"MANHA\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/mentores",
+            "description": "Cria uma conta com o papel MENTOR e o respectivo perfil. Execute 'Obter token CSRF' antes desta requisição. Use apenas dados fictícios e e-mails únicos."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('mentorId', pm.response.json().id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Atualizar status do perfil",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PUBLICADO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/mentores/{{mentorId}}/status",
+            "description": "Altera o estado entre RASCUNHO, PUBLICADO e PAUSADO. Execute antes 'Obter token CSRF' e use o mentorId retornado no cadastro."
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar perfil do mentor",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"biografia\": \"Mentor com experiência atualizada em produtos digitais.\",\n  \"site\": \"https://mentor.example.com\",\n  \"disponibilidades\": [\n    {\n      \"diaSemana\": 3,\n      \"periodo\": \"TARDE\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/mentores/{{mentorId}}",
+            "description": "Atualiza somente os campos enviados. Se disponibilidades for informada, ela substitui a lista semanal completa e não pode estar vazia."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Startup",
+      "description": "A criação exige visitante e CSRF e inicia em RASCUNHO. Depois do login STARTUP, consulte Minhas startups. Edição e publicação exigem vínculo FUNDADOR/REPRESENTANTE e CSRF renovado após login. Qualquer membro STARTUP consulta estado e pendências. Publicar exige cadastro e questionário v3 completos. Uma conta pode ter mais de um projeto.",
+      "item": [
+        {
+          "name": "Criar startup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fundador\": {\n    \"nome\": \"Fundadora de Teste\",\n    \"email\": \"fundadora.startup+{{$timestamp}}@example.com\",\n    \"senha\": \"senha-teste-123\"\n  },\n  \"nomeProvisorio\": \"Startup de Teste\",\n  \"pitchCurto\": \"Conecta startups a mentores.\",\n  \"problemaCentral\": \"Poucas conexões qualificadas.\",\n  \"solucaoProposta\": \"Recomendação de mentores.\",\n  \"publicoAlvo\": \"Startups em ideação\",\n  \"modeloDeNegocio\": \"SaaS\",\n  \"statusValidacao\": \"APENAS_IDEIA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/startups",
+            "description": "Cria a startup e a conta da fundadora. Use somente dados fictícios e e-mails únicos."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('startupId', pm.response.json().id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Listar startups",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/startups"
+          },
+          "response": []
+        },
+        {
+          "name": "Minhas startups",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/startups/me",
+            "description": "Exige sessão STARTUP. Retorna somente startups vinculadas ao usuário da sessão; não aceita identificador do ator. Lista vazia quando não há vínculo. Se houver várias, selecione o startupId correto antes de editar."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Consulta autenticada', () => pm.response.to.have.status(200));",
+            "if (pm.response.code === 200) { const startups = pm.response.json(); pm.test('Resposta em lista', () => pm.expect(startups).to.be.an('array')); if (Array.isArray(startups) && startups.length === 1) pm.collectionVariables.set('startupId', startups[0].id); }"
+          ] } }],
+          "response": []
+        },
+        {
+          "name": "Editar startup",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json; charset=utf-8" },
+              { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/startups/{{startupId}}",
+            "description": "Exige sessão STARTUP vinculada como FUNDADOR/REPRESENTANTE e CSRF. Campos omitidos ou nulos são preservados. Texto enviado não pode ser vazio. Retorna 200; dados inválidos 400, sem permissão/CSRF 403 e startup inexistente 404. Não altera conta, integrantes nem data de criação.",
+            "body": { "mode": "raw", "raw": "{\n  \"nomeProvisorio\": \"Ideia atualizada\",\n  \"pitchCurto\": \"Resumo atualizado do projeto.\",\n  \"statusValidacao\": \"PESQUISA_MERCADO\"\n}", "options": { "raw": { "language": "json" } } }
+          },
+          "response": []
+        },
+        {
+          "name": "Buscar startup por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/startups/{{startupId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar publicação e pendências",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/startups/{{startupId}}/status",
+            "description": "Sessão STARTUP e vínculo atual de qualquer papel. Retorna 200 mesmo sem questionário. Aptidão independe do papel; podeGerenciar só orienta a interface. Não retorna respostas do quiz nem dados de contas."
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Consulta confirmada', () => pm.response.to.have.status(200));",
+            "if (pm.response.code === 200) pm.test('Estado, aptidão e pendências', () => { const body = pm.response.json(); pm.expect(body.startupId).to.eql(pm.collectionVariables.get('startupId')); pm.expect(['RASCUNHO', 'PUBLICADO', 'PAUSADO']).to.include(body.status); pm.expect(body.aptoParaPublicacao).to.be.a('boolean'); pm.expect(body.podeGerenciar).to.be.a('boolean'); pm.expect(body.pendencias).to.be.an('array'); pm.expect(body.aptoParaPublicacao).to.eql(body.pendencias.length === 0); pm.expect(body).not.to.have.property('membros'); pm.expect(body).not.to.have.property('topics'); });"
+          ] } }],
+          "response": []
+        },
+        {
+          "name": "Alterar publicação da startup",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json; charset=utf-8" },
+              { "key": "X-XSRF-TOKEN", "value": "{{csrfToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/v1/startups/{{startupId}}/status",
+            "description": "FUNDADOR/REPRESENTANTE, sessão STARTUP e CSRF. Troque status por PUBLICADO para publicar/retomar, PAUSADO para pausar ou RASCUNHO para retirar publicação. PUBLICADO exige cadastro e quiz v3 salvos e válidos; incompleta retorna 409 STARTUP_INCOMPLETA com pendencias sem alterar estado. Demais destinos não exigem quiz. Não repetir PATCH automaticamente após falha incerta; confirmar por GET.",
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"PUBLICADO\"\n}", "options": { "raw": { "language": "json" } } }
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Alteração confirmada ou pendências', () => pm.expect([200, 409]).to.include(pm.response.code));",
+            "if (pm.response.code === 200) pm.test('Estado confirmado', () => { const body = pm.response.json(); const sent = JSON.parse(pm.request.body.raw); pm.expect(body.status).to.eql(sent.status); pm.expect(body.podeGerenciar).to.eql(true); if (sent.status === 'PUBLICADO') { pm.expect(body.aptoParaPublicacao).to.eql(true); pm.expect(body.pendencias).to.eql([]); } });",
+            "if (pm.response.code === 409) pm.test('Conflito de publicação incompleta', () => { const body = pm.response.json(); pm.expect(body.codigo).to.eql('STARTUP_INCOMPLETA'); pm.expect(body.pendencias).to.be.an('array').that.is.not.empty; });"
+          ] } }],
+          "response": []
+        },
+        {
+          "name": "Adicionar membro",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": \"{{membroUsuarioId}}\",\n  \"papelMembro\": \"MEMBRO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/startups/{{startupId}}/membros",
+            "description": "O usuário precisa já existir. Informe em membroUsuarioId o UUID de uma conta de teste já cadastrada."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar membros",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/startups/{{startupId}}/membros"
+          },
+          "response": []
+        },
+        {
+          "name": "Remover membro",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/startups/{{startupId}}/membros/{{membroUsuarioId}}",
+            "description": "Não é permitido remover o único membro ou o único fundador da startup."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Questionário v3",
+      "description": "Respostas ligadas a perfil existente e identificadas pela sessão. Startup: membro consulta; FUNDADOR/REPRESENTANTE salva. Mentor: somente titular. PUT substitui integralmente e exige CSRF. Perfil existente sem questionário retorna 204; não confundir com 404. Não calcula matching nem publica o perfil.",
+      "item": [
+        {
+          "name": "Consultar questionário de startup",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/startups/{{startupId}}/perfil-match",
+            "description": "200 com respostas; 204 quando ainda não preenchido; 403 sem vínculo/titularidade; 404 perfil inexistente. Sem nota de matching."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Consulta confirmada ou ainda sem respostas', () => pm.expect([200, 204]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) pm.test('Contrato v3 sem credenciais nem nota', () => { const body = pm.response.json(); pm.expect(body.questionnaireVersion).to.eql('damatch-profile-v3'); pm.expect(body).not.to.have.property('senha'); pm.expect(body).not.to.have.property('score'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Salvar questionário de startup",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/startups/{{startupId}}/perfil-match",
+            "description": "Substitui todas as respostas v3. Obtenha /csrf, preserve cookies e use sessão. Não aceita ator/IDs no corpo. Mentor atualiza sua agenda real; accepting não altera o status de publicação.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionnaireVersion\": \"damatch-profile-v3\",\n  \"kind\": \"STARTUP\",\n  \"projectName\": \"Ideia fictícia\",\n  \"moments\": [\n    \"PROBLEM\"\n  ],\n  \"sectors\": [\n    \"TECH\",\n    \"HEALTH\"\n  ],\n  \"topics\": [\n    \"VALIDATION\",\n    \"PRICING\"\n  ],\n  \"experience\": {},\n  \"audiences\": [\n    \"B2C\"\n  ],\n  \"backgrounds\": [\n    \"TECH\",\n    \"BUSINESS\"\n  ],\n  \"capacity\": null,\n  \"format\": \"ONLINE\",\n  \"cityId\": \"\",\n  \"availability\": [\n    {\n      \"day\": \"THU\",\n      \"period\": \"EVENING\"\n    }\n  ],\n  \"cadence\": \"FLEXIBLE\",\n  \"accepting\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Questionário salvo', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) pm.test('Contrato v3 sem credenciais nem nota', () => { const body = pm.response.json(); pm.expect(body.questionnaireVersion).to.eql('damatch-profile-v3'); pm.expect(body).not.to.have.property('senha'); pm.expect(body).not.to.have.property('score'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar questionário de mentor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/mentores/{{mentorId}}/perfil-match",
+            "description": "200 com respostas; 204 quando ainda não preenchido; 403 sem vínculo/titularidade; 404 perfil inexistente. Sem nota de matching."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Consulta confirmada ou ainda sem respostas', () => pm.expect([200, 204]).to.include(pm.response.code));",
+                  "if (pm.response.code === 200) pm.test('Contrato v3 sem credenciais nem nota', () => { const body = pm.response.json(); pm.expect(body.questionnaireVersion).to.eql('damatch-profile-v3'); pm.expect(body).not.to.have.property('senha'); pm.expect(body).not.to.have.property('score'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Salvar questionário de mentor",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "key": "X-XSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/mentores/{{mentorId}}/perfil-match",
+            "description": "Substitui todas as respostas v3. Obtenha /csrf, preserve cookies e use sessão. Não aceita ator/IDs no corpo. Mentor atualiza sua agenda real; accepting não altera o status de publicação.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionnaireVersion\": \"damatch-profile-v3\",\n  \"kind\": \"MENTOR\",\n  \"projectName\": \"\",\n  \"moments\": [\n    \"PROBLEM\"\n  ],\n  \"sectors\": [\n    \"TECH\",\n    \"HEALTH\"\n  ],\n  \"topics\": [\n    \"VALIDATION\",\n    \"PRICING\"\n  ],\n  \"experience\": {\n    \"VALIDATION\": \"PRACTICAL\",\n    \"PRICING\": \"KNOWLEDGE\"\n  },\n  \"audiences\": [\n    \"B2C\"\n  ],\n  \"backgrounds\": [\n    \"TECH\",\n    \"BUSINESS\"\n  ],\n  \"capacity\": \"FEW\",\n  \"format\": \"ONLINE\",\n  \"cityId\": \"\",\n  \"availability\": [\n    {\n      \"day\": \"THU\",\n      \"period\": \"EVENING\"\n    }\n  ],\n  \"cadence\": \"FLEXIBLE\",\n  \"accepting\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Questionário salvo', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) pm.test('Contrato v3 sem credenciais nem nota', () => { const body = pm.response.json(); pm.expect(body.questionnaireVersion).to.eql('damatch-profile-v3'); pm.expect(body).not.to.have.property('senha'); pm.expect(body).not.to.have.property('score'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "PENDENTE — Mentor",
+      "description": "Contratos propostos para busca e listagem de mentores. Estes endpoints ainda não foram implementados e retornam 404.",
+      "item": [
+        {
+          "name": "PENDENTE — Buscar mentor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/mentores/{{mentorId}}",
+            "description": "Rota proposta para busca por id do mentor. Ainda não existe MentorController nem método de serviço que busque Mentor por UUID para resposta HTTP; o backend atual responderá 404."
+          },
+          "response": []
+        },
+        {
+          "name": "PENDENTE — Exibir mentores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/mentores",
+            "description": "Rota proposta para listar mentores. Ainda não existe MentorController nem caso de uso de listagem; o backend atual responderá 404."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

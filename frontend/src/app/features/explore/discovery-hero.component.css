@@ -1,0 +1,13 @@
+:host{display:block}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 215px;gap:28px;align-items:center;padding:34px 36px;border:1px solid var(--border);border-radius:18px;background:var(--hero-bg);overflow:hidden}
+.hero .eyebrow{font-size:9px;display:flex;gap:7px;align-items:center}
+.eyebrow>span{width:6px;height:6px;background:var(--teal);border-radius:50%}
+.hero h1{font-size:clamp(27px,3.1vw,42px);letter-spacing:-1.5px;line-height:1.17;margin:16px 0;max-width:590px}
+.hero-copy>p:not(.eyebrow){font-size:12px;line-height:1.9;color:var(--text-soft);max-width:470px;margin:0}
+.hero-actions{display:flex;flex-wrap:wrap;align-items:center;gap:20px;margin-top:23px}
+.hero-link{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--accent-ink);text-decoration:none}
+.hero-link app-icon{width:15px;height:15px}
+.hero-character{--lumen-size:155px;--lumen-speech-width:215px;display:flex;justify-content:center;min-width:0}
+@media(max-width:1100px){.hero{grid-template-columns:minmax(0,1fr) 185px;padding:27px;gap:20px}.hero-character{--lumen-size:135px}.hero h1{font-size:32px;letter-spacing:-1px}}
+@media(max-width:700px){.hero{padding:25px;grid-template-columns:minmax(0,1fr) 170px}.hero-character{--lumen-size:120px}.hero h1{font-size:29px}}
+@media(max-width:500px){.hero{grid-template-columns:1fr;gap:22px;padding:22px}.hero-character{--lumen-speech-width:100%;flex-direction:row;justify-content:flex-start;gap:13px;border-top:1px solid var(--border-soft);padding-top:16px}.hero h1{font-size:30px}.hero-actions{gap:15px}.hero .eyebrow{font-size:8px}}
